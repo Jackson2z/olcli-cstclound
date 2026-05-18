@@ -46,7 +46,8 @@ program
   .description('Overleaf CLI - interact with Overleaf projects from the command line')
   .version(VERSION)
   .option('--base-url <url>', 'Overleaf instance base URL (overrides OVERLEAF_BASE_URL and config)')
-  .option('--cookie-name <name>', 'Session cookie name (default: overleaf_session2, use overleaf.sid for older instances)');
+  .option('--cookie-name <name>', 'Session cookie name (default: overleaf_session2, use overleaf.sid for older instances)')
+  .option('--verbose', 'Print every HTTP request, status, and error response body to stderr');
 
 /**
  * Helper to get authenticated client
@@ -62,7 +63,9 @@ async function getClient(cookieOpt?: string, baseUrlOpt?: string): Promise<Overl
   }
   const baseUrl = baseUrlOpt || (program.opts().baseUrl as string | undefined) || getBaseUrl();
   const cookieName = (program.opts().cookieName as string | undefined) || getSessionCookieName();
-  return OverleafClient.fromSessionCookie(cookie, baseUrl, cookieName);
+  const client = await OverleafClient.fromSessionCookie(cookie, baseUrl, cookieName);
+  if (program.opts().verbose) client.setVerbose(true);
+  return client;
 }
 
 /**
@@ -454,7 +457,11 @@ program
       }
 
       const content = readFileSync(file);
-      const fileName = basename(file);
+      // Preserve the relative path (e.g. 'figures/fig01.png') so the file lands
+      // in the correct subfolder, not in project root. uploadFile() will
+      // lazy-resolve the folder tree when no folderId/tree is supplied.
+      // Normalize: strip leading './' and any leading slashes.
+      const fileName = file.replace(/^(\.\/)+/, '').replace(/^\/+/, '');
 
       // Pass folder ID or null for root folder (client will compute it)
       const folderId = options.folder || null;
