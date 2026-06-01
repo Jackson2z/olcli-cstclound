@@ -2,10 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [0.4.0] - 2026-06-01
 
 ### Added
-- **Review comment management** — new `olcli comments` commands to list Overleaf review comments with source locations and optional context, add comments to selected document text, resolve/reopen comment threads, and permanently delete comment threads.
+- **Review comment management** — new `olcli comments` commands to list Overleaf review comments with source locations and optional context, add comments to selected document text, resolve/reopen comment threads, and permanently delete comment threads ([#25](https://github.com/aloth/olcli/pull/25) by [@shiquda](https://github.com/shiquda))
+- **Nix flake** — install via `nix profile install github:aloth/olcli` ([#24](https://github.com/aloth/olcli/issues/24))
 
 ## [0.3.1] - 2026-05-18
 
