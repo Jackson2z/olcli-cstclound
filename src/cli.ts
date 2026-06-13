@@ -158,6 +158,34 @@ program
   });
 
 program
+  .command('login [share-url]')
+  .description('CAS SSO login via Playwright browser automation (cstcloud)')
+  .action(async (shareUrl?: string) => {
+    const spinner = ora('Launching browser for CAS SSO login...').start();
+    try {
+      const { casLogin } = await import('./login.js');
+      spinner.stop();
+      const { cookie, projectId } = await casLogin(shareUrl);
+
+      // Verify by fetching project list
+      const verifySpinner = ora('Verifying session...').start();
+      const baseUrl = getBaseUrl();
+      const cookieName = getSessionCookieName();
+      const client = await OverleafClient.fromSessionCookie(cookie, baseUrl, cookieName);
+      const projects = await client.listProjects();
+      verifySpinner.succeed(`Authenticated! Found ${projects.length} project(s).`);
+
+      console.log(chalk.dim(`Config saved to: ${getConfigPath()}`));
+      if (projectId) {
+        console.log(chalk.dim(`Project ID: ${projectId}`));
+      }
+    } catch (error: any) {
+      spinner.fail(`Login failed: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
   .command('whoami')
   .description('Show current authentication status')
   .action(async () => {
