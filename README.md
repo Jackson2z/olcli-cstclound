@@ -40,7 +40,27 @@ node dist/cli.js list
 
 ### 1. 鉴权
 
-在浏览器登录 https://latex.cstcloud.cn 后，从 DevTools 获取 cookie：
+**推荐方式** — 浏览器自动登录（CAS SSO）：
+
+```bash
+node dist/cli.js login
+```
+
+浏览器弹出 → 完成中科院通行证 SSO → 自动提取 `overleaf.sid` cookie 并保存。
+
+如需指定分享链接（自动接受邀请）：
+
+```bash
+node dist/cli.js login https://latex.cstcloud.cn/你的分享token
+```
+
+首次使用需安装 Chromium：
+
+```bash
+npx playwright install chromium
+```
+
+**手动方式** — 从浏览器 DevTools 获取 cookie：
 
 1. 打开浏览器开发者工具（F12）→ 应用 → Cookie
 2. 复制 `overleaf.sid` 的值
@@ -55,7 +75,7 @@ node dist/cli.js auth --cookie "s%3A你的cookie值..."
 node dist/cli.js whoami
 ```
 
-**提示**：cookie 通常可保持数周有效。认证失败时重新获取即可。
+**提示**：cookie 通常可保持数周有效。认证失败时重新运行 `login` 即可。
 
 ### 2. 列出项目
 
@@ -105,7 +125,8 @@ node dist/cli.js pdf -o paper.pdf
 
 | 命令 | 说明 |
 |------|------|
-| `auth` | 设置 session cookie |
+| `login [分享链接]` | CAS SSO 浏览器自动登录（Playwright） |
+| `auth` | 手动设置 session cookie |
 | `whoami` | 检查认证状态 |
 | `logout` | 清除凭据 |
 | `list` | 列出全部项目 |
