@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 const USER_AGENT = `olcli/${pkg.version}`;
 
-const DEFAULT_BASE_URL = 'https://www.overleaf.com';
+const DEFAULT_BASE_URL = 'https://latex.cstcloud.cn';
 
 export interface Project {
   id: string;
@@ -644,10 +644,11 @@ export class OverleafClient {
    * characters in response headers (e.g. Content-Disposition with Unicode
    * project names). See: https://github.com/aloth/olcli/issues/2
    */
-  private async downloadBuffer(url: string): Promise<Buffer> {
+  private async downloadBuffer(url: string, timeoutMs: number = 240000): Promise<Buffer> {
     const response = await this.httpRequest(url, {
       headers: this.getHeaders(),
-      expect: 'buffer'
+      expect: 'buffer',
+      timeoutMs
     });
 
     if (!response.ok) {
@@ -682,7 +683,8 @@ export class OverleafClient {
         check: 'silent',
         incrementalCompilesEnabled: true
       }),
-      expect: 'json'
+      expect: 'json',
+      timeoutMs: 240000
     });
 
     if (!response.ok) {
@@ -718,9 +720,9 @@ export class OverleafClient {
   /**
    * Download compiled PDF
    */
-  async downloadPdf(projectId: string): Promise<Buffer> {
+  async downloadPdf(projectId: string, timeoutMs: number = 240000): Promise<Buffer> {
     const { pdfUrl } = await this.compileProject(projectId);
-    return this.downloadBuffer(pdfUrl);
+    return this.downloadBuffer(pdfUrl, timeoutMs);
   }
 
   /**
@@ -2053,7 +2055,8 @@ export class OverleafClient {
         check: 'silent',
         incrementalCompilesEnabled: true
       }),
-      expect: 'json'
+      expect: 'json',
+      timeoutMs: 240000
     });
 
     if (!response.ok) {

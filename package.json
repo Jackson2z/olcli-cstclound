@@ -1,10 +1,10 @@
 {
-  "name": "@aloth/olcli",
+  "name": "olcli-cstcloud",
   "version": "0.4.1",
-  "description": "Command-line interface for Overleaf — Sync, manage, and compile LaTeX projects from your terminal",
+  "description": "olcli fork for cstcloud Overleaf — Sync, manage, and compile LaTeX projects from your terminal",
   "type": "module",
   "bin": {
-    "olcli": "dist/cli.js"
+    "olcli-cstcloud": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",

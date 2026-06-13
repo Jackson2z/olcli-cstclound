@@ -27,7 +27,7 @@ const config = new Conf<OlcliConfig>({
 });
 
 export function getBaseUrl(): string {
-  return process.env.OVERLEAF_BASE_URL || config.get('baseUrl') || 'https://www.overleaf.com';
+  return process.env.OVERLEAF_BASE_URL || config.get('baseUrl') || 'https://latex.cstcloud.cn';
 }
 
 export function setBaseUrl(url: string): void {
@@ -35,7 +35,7 @@ export function setBaseUrl(url: string): void {
 }
 
 export function getSessionCookieName(): string {
-  return process.env.OVERLEAF_COOKIE_NAME || config.get('sessionCookieName') || 'overleaf_session2';
+  return process.env.OVERLEAF_COOKIE_NAME || config.get('sessionCookieName') || 'overleaf.sid';
 }
 
 export function setSessionCookieName(name: string): void {
