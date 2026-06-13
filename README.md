@@ -1,460 +1,291 @@
-# olcli — Overleaf CLI
+# olcli-cstcloud — 中国科技云 Overleaf 命令行工具
 
-**Command-line interface for Overleaf** — Sync, manage, and compile LaTeX projects from your terminal.
+**基于 [aloth/olcli](https://github.com/aloth/olcli) 的定制 fork**，默认适配[中国科技云论文协同编辑服务](https://latex.cstcloud.cn)，开箱即用，无需手动配置 base URL 和 cookie 名。
 
-[![npm version](https://img.shields.io/npm/v/@aloth/olcli.svg)](https://www.npmjs.com/package/@aloth/olcli)
-[![AUR Package](https://img.shields.io/aur/version/olcli)](https://aur.archlinux.org/packages/olcli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![AgentSkills](https://img.shields.io/badge/AgentSkills-compatible-blue)](https://agentskills.io)
 
-Work with Overleaf projects directly from your command line. Edit locally with your favorite editor, version control with Git, and sync seamlessly with Overleaf's cloud compilation.
+## 与上游 olcli 的区别
 
-<p align="center">
-  <img src="screenshots/demo.gif" alt="olcli demo" width="600">
-</p>
+| 项目 | 上游 olcli | olcli-cstcloud |
+|------|-----------|---------------|
+| 默认 base URL | `https://www.overleaf.com` | `https://latex.cstcloud.cn` |
+| 默认 cookie 名 | `overleaf_session2` | `overleaf.sid` |
+| 编译/下载超时 | 10s | **240s**（适配大型项目） |
 
-## Features
+上游所有功能（pull/push/sync/compile/comments/ignore）完全保留，仅默认值改动。
 
-**Full Overleaf command-line access:**
+## 安装
 
-- 📋 **List** all your Overleaf projects
-- ⬇️ **Pull** project files to local directory for offline editing
-- ⬆️ **Push** local changes back to Overleaf
-- 🔄 **Sync** bidirectionally with smart conflict detection
-- ✌️ **Two-way deletions** — files removed locally are deleted on Overleaf on the next sync (opt out with `--no-delete`)
-- 🗑️ **Delete** and ✏️ **rename** remote files by path
-- 🚫 **Smart ignore** — LaTeX build artifacts (`.aux`, `.bbl`, `.log`, `.synctex.gz`, …) and OS noise are filtered out automatically; extend with `.olignore` (gitignore-style)
-- 📄 **Compile** PDFs using Overleaf's remote compiler
-- 📦 **Download** individual files or full project archives
-- 📤 **Upload** files to projects
-- 💬 **Review comments** — list comments with source locations, add, resolve, reopen, and delete threads
-- 🗂️ **Preserve folder structure** when pushing nested files
-- ⚙️ **Support self-hosted Overleaf/ShareLaTeX instances** via configurable base URL and session cookie name
-- 📊 **Output** compile artifacts (`.bbl`, `.log`, `.aux` for arXiv submissions)
-
-**Perfect for:**
-- Editing LaTeX in your preferred text editor (Vim, VS Code, Emacs, etc.)
-- Version control with Git while using Overleaf's compiler
-- Automating workflows and CI/CD pipelines
-- Offline work with periodic sync
-- Collaborative projects where some prefer CLI, others prefer web
-
-## Installation
-
-### Homebrew (macOS/Linux)
+### 从源码构建
 
 ```bash
-brew tap aloth/tap
-brew install olcli
+git clone https://github.com/Jackson2z/olcli-cstclound.git
+cd olcli-cstclound
+npm install
+npm run build
 ```
 
-### npm (all platforms)
-
-Install globally to use the `olcli` command anywhere:
+构建后通过 `node dist/cli.js` 调用：
 
 ```bash
-npm install -g @aloth/olcli
+node dist/cli.js whoami
+node dist/cli.js list
 ```
 
-Or use with `npx` without installation:
+### 依赖
+
+- Node.js >= 18
+
+## 快速开始
+
+### 1. 鉴权
+
+在浏览器登录 https://latex.cstcloud.cn 后，从 DevTools 获取 cookie：
+
+1. 打开浏览器开发者工具（F12）→ 应用 → Cookie
+2. 复制 `overleaf.sid` 的值
 
 ```bash
-npx @aloth/olcli list
+node dist/cli.js auth --cookie "s%3A你的cookie值..."
 ```
 
-### For AI agents (via AgentSkills)
+验证登录状态：
 
 ```bash
-npx skills add aloth/olcli
+node dist/cli.js whoami
 ```
 
-### Arch Linux
+**提示**：cookie 通常可保持数周有效。认证失败时重新获取即可。
 
-The package is available on the [Arch User Repository (AUR)](https://aur.archlinux.org/packages/olcli). 
-
-You can install it using your preferred AUR helper (such as `yay` or `paru`):
+### 2. 列出项目
 
 ```bash
-yay -S olcli
-# or
-paru -S olcli
+node dist/cli.js list
 ```
 
-#### Manual Installation:
-If you prefer not to use an AUR helper, you can build and install the package manually using makepkg:
-code Bash
+### 3. 拉取项目到本地
 
 ```bash
-git clone https://aur.archlinux.org/olcli.git
-cd olcli
-makepkg -si
+node dist/cli.js pull "项目名"
+cd 项目名/
 ```
 
-## Quick Start
-
-### 1. Authenticate with Overleaf
-
-Get your session cookie from Overleaf.com:
-
-1. Log into [overleaf.com](https://www.overleaf.com)
-2. Open Developer Tools (F12 or Cmd+Option+I) → Application/Storage → Cookies
-3. Copy the value of `overleaf_session2`
-
-Store it with olcli:
+### 4. 本地编辑 + 推送到远端
 
 ```bash
-olcli auth --cookie "your_session_cookie_value"
-```
-
-**Tip:** The cookie stays valid for weeks. Just refresh it when authentication fails.
-
-### 2. List Your Projects
-
-```bash
-olcli list
-```
-
-See all your Overleaf projects with IDs and last modified dates.
-
-### 3. Pull a Project Locally
-
-Download any project to work on it locally:
-
-```bash
-olcli pull "My Thesis"
-cd My_Thesis/
-```
-
-Now you can edit `.tex` files with your preferred editor (Vim, VS Code, Emacs, etc.).
-
-### 4. Edit Locally, Sync to Overleaf
-
-```bash
-# Edit files locally with your favorite editor
+# 本地编辑
 vim main.tex
 
-# Push changes back to Overleaf
-olcli push
+# 推送改动
+node dist/cli.js push
 
-# Or sync bidirectionally (pull + push in one command)
-olcli sync
+# 或双向同步（先拉再推）
+node dist/cli.js sync
 ```
 
-Your collaborators can continue using the Overleaf web editor — changes sync seamlessly.
+协作者在网页端的修改会通过 sync 自动拉取。
 
-### 5. Compile and Download PDF
-
-Use Overleaf's remote compiler from the command line:
+### 5. 远端编译
 
 ```bash
-olcli pdf
+node dist/cli.js compile
 ```
 
-The compiled PDF downloads automatically to your current directory.
+触发 cstcloud 远端编译并输出 PDF URL。大项目（含多张 figure PDF）编译可能需要 1-2 分钟。
 
-## Commands
-
-All commands auto-detect the project when run from a synced directory (contains `.olcli.json`).
-
-| Command | Description |
-|---------|-------------|
-| `olcli auth` | Set session cookie |
-| `olcli whoami` | Check authentication status |
-| `olcli logout` | Clear stored credentials |
-| `olcli list` | List all projects |
-| `olcli info [project]` | Show project details and file list |
-| `olcli pull [project] [dir]` | Download project files to local directory |
-| `olcli push [dir]` | Upload local changes to Overleaf |
-| `olcli sync [dir]` | Bidirectional sync (pull + push) |
-| `olcli upload <file> [project]` | Upload a single file |
-| `olcli download <file> [project]` | Download a single file |
-| `olcli comments list [project]` | List comments with source text and file locations (`--status`, `--context`) |
-| `olcli comments add <file> <message> [project]` | Add a comment to selected text |
-| `olcli comments resolve <threadId> [project]` | Resolve a comment thread |
-| `olcli comments reopen <threadId> [project]` | Reopen a resolved comment thread |
-| `olcli comments delete <threadId> [project]` | Permanently delete a comment thread |
-| `olcli delete <file> [project]` | Delete a remote file or folder by path (alias: `rm`) |
-| `olcli rename <oldname> <newname> [project]` | Rename a remote file or folder by path (alias: `mv`) |
-| `olcli ignored [dir]` | List ignore patterns currently in effect |
-| `olcli zip [project]` | Download project as zip archive |
-| `olcli compile [project]` | Trigger PDF compilation |
-| `olcli pdf [project]` | Compile and download PDF |
-| `olcli output [type]` | Download compile output files |
-| `olcli config set-url <url>` | Set a self-hosted Overleaf base URL |
-| `olcli config set-cookie-name <name>` | Set the session cookie name |
-| `olcli check` | Show config paths and credential sources |
-
-### Review comments
+如需自动下载 PDF（超时 240s）：
 
 ```bash
-olcli comments list "My Paper" --status open --context 2
-olcli comments list "My Paper" --status resolved --json
-olcli comments add main.tex "Please clarify this definition" "My Paper" --text "A Skill is"
-olcli comments add main.tex "Check this sentence" "My Paper" --line 42 --column 1 --length 20 --json
-olcli comments resolve 6a1a5fedbf90b811e1000001 "My Paper" --json
-olcli comments reopen 6a1a5fedbf90b811e1000001 "My Paper"
-olcli comments delete 6a1a5fedbf90b811e1000001 "My Paper" --json
+node dist/cli.js pdf -o paper.pdf
 ```
 
-### Global options
+## 全部命令
 
-These flags work with **every** command and may be placed before or after the command name:
+所有命令在含 `.olcli.json` 的同步目录下运行时自动识别项目。
 
-| Flag | Description |
-|------|-------------|
-| `--verbose` | Print every HTTP request, status, content-type, and (on errors) a response-body snippet to stderr. Useful for debugging failed compiles, 404s on `pdf`/`output`, auth issues, or unexpected upload behavior. |
-| `--base-url <url>` | Override the Overleaf instance base URL (also `OVERLEAF_BASE_URL` env var or `olcli config set-url`). |
-| `--cookie-name <name>` | Override the session cookie name (default `overleaf_session2`; older instances use `overleaf.sid`). |
+| 命令 | 说明 |
+|------|------|
+| `auth` | 设置 session cookie |
+| `whoami` | 检查认证状态 |
+| `logout` | 清除凭据 |
+| `list` | 列出全部项目 |
+| `info [项目]` | 查看项目详情和文件列表 |
+| `pull [项目] [目录]` | 拉取项目文件到本地 |
+| `push [目录]` | 推送本地改动到远端 |
+| `sync [目录]` | 双向同步（pull + push） |
+| `upload <文件> [项目]` | 上传单个文件 |
+| `download <文件> [项目]` | 下载单个文件 |
+| `delete <文件> [项目]` | 删除远端文件/文件夹（别名 `rm`） |
+| `rename <旧名> <新名> [项目]` | 重命名远端文件/文件夹（别名 `mv`） |
+| `compile [项目]` | 触发 PDF 编译 |
+| `pdf [项目]` | 编译并下载 PDF |
+| `output [类型]` | 下载编译产物（`.bbl`, `.log`, `.aux` 等） |
+| `zip [项目]` | 下载项目 zip 归档 |
+| `comments list [项目]` | 列出审阅批注 |
+| `comments add <文件> <消息> [项目]` | 添加批注 |
+| `comments resolve <threadId> [项目]` | 解决批注 |
+| `comments reopen <threadId> [项目]` | 重新打开批注 |
+| `comments delete <threadId> [项目]` | 删除批注 |
+| `ignored [目录]` | 列出当前生效的忽略规则 |
+| `check` | 显示配置路径和凭据来源 |
 
-Examples:
+### 全局选项
 
-```bash
-olcli --verbose pdf                    # see every request the compile makes
-olcli pdf --verbose                    # same thing, flag after command
-olcli --verbose sync                   # debug a sync that's misbehaving
-olcli --verbose upload figures/a.png   # confirm the file is placed in figures/
-```
+| 选项 | 说明 |
+|------|------|
+| `--verbose` | 将每个 HTTP 请求/响应输出到 stderr，用于调试 |
+| `--base-url <URL>` | 覆盖实例地址（环境变量 `OVERLEAF_BASE_URL`） |
+| `--cookie-name <名称>` | 覆盖 cookie 名称（环境变量 `OVERLEAF_COOKIE_NAME`） |
 
-## Use Cases
-
-### Local Editing with Overleaf Compilation
-
-Work offline in your favorite editor, push when ready, compile remotely:
-
-```bash
-olcli pull "Research Paper"
-cd Research_Paper
-vim introduction.tex
-git commit -am "Update intro"
-olcli push
-olcli pdf
-```
-
-### Git Version Control + Overleaf
-
-Keep your LaTeX project in Git while using Overleaf's compiler:
-
-```bash
-olcli pull "My Thesis" thesis
-cd thesis
-git init
-git add .
-git commit -m "Initial import from Overleaf"
-
-# Daily workflow
-vim chapters/methods.tex
-git commit -am "Draft methods section"
-olcli sync  # Sync with Overleaf
-olcli pdf
-```
-
-### Automated Workflows
-
-Integrate Overleaf compilation into CI/CD:
-
-```bash
-#!/bin/bash
-olcli auth --cookie "$OVERLEAF_SESSION"
-olcli pull "Automated Report"
-./generate-data.py > tables/results.tex
-olcli push
-olcli pdf -o report-$(date +%Y-%m-%d).pdf
-```
-
-### arXiv Submissions
-
-Download the `.bbl` file for arXiv submissions:
-
-```bash
-olcli output bbl --project "My Paper"
-# Downloads: bbl
-```
-
-List all available compile output files:
-
-```bash
-olcli output --list
-# Available output files:
-#   aux          output.aux
-#   bbl          output.bbl
-#   blg          output.blg
-#   log          output.log
-#   ...
-```
-
-## Sync Behavior
+## 同步行为
 
 ### Pull
-- Downloads all files from Overleaf
-- **Skips** local files modified after last pull (won't overwrite your changes)
-- Use `--force` to overwrite local changes
+- 下载远端全部文件
+- **跳过**上次 pull 后本地修改过的文件（不覆盖本地改动）
+- 使用 `--force` 强制覆盖
 
 ### Push
-- Uploads files modified after last pull
-- Preserves nested folder structure when uploading
-- Filters out LaTeX build artifacts and OS noise (see [Ignoring files](#ignoring-files))
-- Use `--all` to upload all files
-- Use `--dry-run` to preview changes
-- Use `--show-ignored` to see what was filtered out
+- 上传上次 pull 后修改过的文件
+- 保留嵌套文件夹结构
+- 自动过滤 LaTeX 编译产物（见 [忽略规则](#忽略规则)）
+- `--all` 上传全部文件
+- `--dry-run` 预览变更
+- `--show-ignored` 显示被过滤的文件
 
 ### Sync
-- Pulls remote changes
-- Preserves local modifications (local wins if newer)
-- Pushes local changes to remote
-- **Propagates local deletions to the remote** — if you delete a file locally, it's deleted on Overleaf on the next sync. Use `--no-delete` to opt out.
-- Filters out LaTeX build artifacts and OS noise
-- Use `--verbose` to see detailed file operations (see [Global options](#global-options))
-- Use `--dry-run` to preview without applying
+- 先拉取远端改动，再推送本地改动
+- 本地文件更新则保留本地版本
+- **传播本地删除到远端** — 本地删除的文件在下次 sync 时从远端删除（`--no-delete` 可关闭）
+- `--dry-run` 预览
 
-#### How deletion propagation works
+### 删除传播机制
 
-On every sync, `olcli` records a manifest of remote files in `.olcli.json`. The next sync compares the manifest against your local working tree:
+每次 sync，olcli 在 `.olcli.json` 中记录远端文件清单。下次 sync 时对比清单与本地文件树：
 
-- File missing locally **and** still present on remote → deleted on Overleaf
-- File new locally → uploaded
-- File modified locally after last pull → uploaded (local wins)
-- File only on remote → downloaded
+- 本地缺失 + 远端存在 → 远端删除
+- 本地新增 → 上传
+- 本地修改（晚于上次 pull）→ 上传
+- 远端新增 → 下载
 
-First-time syncs skip the deletion phase (no manifest exists yet to distinguish "never had it" from "deleted it").
+首次 sync 时跳过删除阶段（无清单可对比）。
 
-## Ignoring files
+## 忽略规则
 
-`olcli` automatically filters local files through a layered ignore list before uploading. This keeps LaTeX build artifacts (from local `pdflatex`/`latexmk` runs) and OS noise out of your Overleaf project.
+上传前自动过滤本地文件，保持远端项目干净。
 
-### Three layers
+### 三层过滤
 
-| Layer | File | Purpose |
-|---|---|---|
-| 1 | (built-in) | LaTeX intermediates (`.aux`, `.bbl`, `.log`, `.fls`, `.synctex.gz`, beamer/biber/glossaries/minted), OS noise (`.DS_Store`, `Thumbs.db`, `*.swp`), common build dirs (`build/`, `out/`, `_minted-*/`). Always on; opt out with `--no-default-ignore`. |
-| 2 | `.olignore` | Project-level patterns, gitignore syntax. Commit alongside your `.tex` sources. |
-| 3 | `.olignore.local` | Machine-specific patterns. Add to `.gitignore`. |
+| 层级 | 文件 | 用途 |
+|------|------|------|
+| 1 | 内置规则 | LaTeX 中间产物（`.aux`, `.bbl`, `.log`, `.fls`, `.synctex.gz`）、OS 垃圾（`.DS_Store`, `Thumbs.db`）、构建目录（`build/`, `out/`）。`--no-default-ignore` 可关闭。 |
+| 2 | `.olignore` | 项目级规则，gitignore 语法。建议与 `.tex` 一起提交。 |
+| 3 | `.olignore.local` | 本机特定规则，加入 `.gitignore`。 |
 
-Later layers override earlier ones, just like git. Negation (`!important.aux`) is supported.
+### 特殊 PDF 规则
 
-### Special PDF rule
+`X.pdf` 仅在同一文件夹存在 `X.tex`（或 `.ltx`）时被忽略。因此 `thesis.pdf`（旁边有 `thesis.tex`）会被过滤，而 `figures/diagram.pdf` 会正常同步。
 
-`X.pdf` is ignored only if a same-named `X.tex` (or `.ltx`) exists in the same folder. So `thesis.pdf` next to `thesis.tex` is filtered, but a hand-uploaded `figures/diagram.pdf` still syncs.
-
-### Example `.olignore`
+### 示例 `.olignore`
 
 ```gitignore
-# Drafts that should never reach Overleaf
-*.draft.tex
-notes/
-chapters/scratch/
+# 编译产物
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.blg
+main.pdf
+supplementary.pdf
 
-# But keep this one auxiliary file
-!important.aux
+# latex-sync 元数据
+.latex-sync/
 ```
 
-### Inspecting and overriding
+### 检查和覆盖
 
 ```bash
-olcli ignored                  # list patterns currently in effect
-olcli push --show-ignored      # see what was skipped on this run
-olcli sync --no-default-ignore # only .olignore applies
-olcli sync --no-ignore         # escape hatch — upload everything
+node dist/cli.js ignored                  # 列出当前规则
+node dist/cli.js push --show-ignored      # 查看被跳过的文件
+node dist/cli.js sync --no-default-ignore # 仅 .olignore 生效
+node dist/cli.js sync --no-ignore         # 上传所有文件
 ```
 
-## Configuration
+## 凭据存储
 
-Credentials are stored in (checked in order):
+按以下顺序查找凭据：
 
-1. `OVERLEAF_SESSION` environment variable
-2. `.olauth` file in current directory
-3. Global config: `~/.config/olcli-nodejs/config.json` (macOS/Linux)
+1. `OVERLEAF_SESSION` 环境变量
+2. 当前目录 `.olauth` 文件
+3. 全局配置：`~/.config/olcli-nodejs/config.json`
 
-### .olauth File
+### .olauth 文件
 
-For project-specific credentials, create `.olauth` in your project directory:
+项目级凭据，在项目目录下创建：
 
 ```
-s%3AyourSessionCookieValue...
+overleaf.sid=s%3A你的cookie值...
 ```
 
-### Self-hosted Overleaf / ShareLaTeX
+## 典型用例
 
-You can point `olcli` at a self-hosted instance and override the session cookie name. Both flags are documented under [Global options](#global-options) and can be combined with any command.
+### 本地编辑 + 远端编译
 
 ```bash
-olcli --base-url https://latex.example.org list
-olcli --base-url https://latex.example.org --cookie-name overleaf.sid whoami
+node dist/cli.js pull "论文项目"
+cd 论文项目/
+vim sections/01_introduction.tex
+node dist/cli.js push
+node dist/cli.js compile    # 输出 PDF URL
 ```
 
-Persist these settings in `olcli` config so you don't have to repeat them:
+### Git 版本控制 + 远端同步
 
 ```bash
-olcli config set-url https://latex.example.org
-olcli config set-cookie-name overleaf.sid
-```
-
-## Examples
-
-### Work on a thesis
-
-```bash
-# Initial setup
-olcli pull "PhD Thesis" thesis
+node dist/cli.js pull "我的论文" thesis
 cd thesis
+git init && git add . && git commit -m "从 Overleaf 导入"
 
-# Daily workflow
-vim chapters/introduction.tex
-olcli sync
-olcli pdf -o draft.pdf
+# 日常工作流
+vim main.tex
+git commit -am "修改引言"
+node dist/cli.js sync       # 与远端同步
 ```
 
-### Quick PDF download
-
-```bash
-olcli pdf "Conference Paper" -o paper.pdf
-```
-
-### Download a single file
-
-```bash
-olcli download main.tex "My Project"
-```
-
-### Upload figures
-
-```bash
-cd my-project
-olcli upload figures/diagram.png
-```
-
-### Backup all projects
-
-```bash
-for proj in $(olcli list --json | jq -r '.[].name'); do
-  olcli zip "$proj" -o "backups/${proj}.zip"
-done
-```
-
-### Prepare for arXiv
+### arXiv 提交
 
 ```bash
 cd my-paper
-olcli output bbl -o main.bbl
-olcli zip -o arxiv-submission.zip
+node dist/cli.js output bbl -o main.bbl
+node dist/cli.js zip -o arxiv-submission.zip
 ```
 
-## Troubleshooting
+## 故障排查
 
-### Session expired
+### 会话过期
 
-If you get authentication errors, your session cookie may have expired. Get a fresh one from the browser and run `olcli auth` again.
+认证失败时，重新从浏览器获取 `overleaf.sid` cookie：
 
-### Compilation fails
+```bash
+node dist/cli.js auth --cookie "新的cookie值"
+```
 
-Check the Overleaf web editor for detailed error logs. Common issues:
-- Missing packages
-- Syntax errors in `.tex` files
-- Missing bibliography files
+### 编译失败
 
-## Contributing
+检查网页端编辑器的详细错误日志，常见原因：
+- 缺少宏包
+- `.tex` 语法错误
+- 缺少参考文献文件
 
-Contributions are welcome! Please open an issue or submit a pull request.
+### 编译超时
 
-## License
+大型项目（含多张高分辨率 figure PDF）编译可能超过 240s。使用 `compile` 命令（仅触发编译，返回 PDF URL），然后在浏览器中打开 URL 下载。
 
-MIT © [Alexander Loth](https://alexloth.com)
+## 许可证
+
+MIT © [Alexander Loth](https://alexloth.com)（上游作者）
+
+本 fork 遵循 MIT 许可证。
